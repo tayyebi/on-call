@@ -32,7 +32,9 @@ $lintStatus = 0;
 exec('php -l ' . escapeshellarg($distFile) . ' 2>&1', $lintOutput, $lintStatus);
 check($failures, $lintStatus === 0, "php -l reports no syntax errors: " . implode(' ', $lintOutput));
 
-foreach (['OC_Autoloader', 'OC_Auth', 'OC_Calls', 'OC_Database', 'OC_Devices', 'OC_Env', 'OC_LongPoll', 'OC_Totp', 'OC_View'] as $class) {
+// OC_Autoloader itself is deliberately excluded from the merge — the
+// concatenated build needs no autoloading — so it isn't checked for here.
+foreach (['OC_Auth', 'OC_Calls', 'OC_Database', 'OC_Devices', 'OC_Env', 'OC_LongPoll', 'OC_Totp', 'OC_View'] as $class) {
     check($failures, (bool) preg_match('/\bclass\s+' . preg_quote($class, '/') . '\b/', $source), "defines $class");
 }
 
@@ -43,9 +45,9 @@ foreach (['index', 'api', 'call', 'command-center', 'devices', 'login', 'logout'
 check($failures, str_contains($source, 'bootstrap.php') === false, "bootstrap.php require is stripped from merged pages");
 check($failures, str_contains($source, "OC_Env::load(__DIR__ . '/.env');"), "front controller loads .env");
 
-// Each route closure must open directly in PHP-code mode. If it opens with
-// "?>" instead, the page's own leading PHP statements (auth checks, data
-// fetch) get emitted as literal text instead of executing — see build.php.
+// Each route closure must open directly in PHP-code mode. If it closes
+// into HTML mode instead, the page's own leading PHP statements (auth
+// checks, data fetch) get emitted as literal text instead of executing.
 check(
     $failures,
     (bool) !preg_match('/\$__routes\[[^\]]+\]\s*=\s*function\s*\(\)\s*\{\s*\?>/', $source),
