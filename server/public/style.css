@@ -1,0 +1,19 @@
+body {
+	max-width: 60rem;
+	margin: 0 auto;
+	padding: 1rem;
+}
+nav ul {
+	display: flex;
+	gap: 1rem;
+	padding: 0;
+	list-style: none;
+}
+form {
+	margin-block: 2rem;
+}
+textarea {
+	display: block;
+	min-width: 30rem;
+	min-height: 5rem;
+}

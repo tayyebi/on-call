@@ -25,11 +25,14 @@ jobs:
       - name: Test merged build
         working-directory: server
         run: php tests/build_test.php
-      - name: Attach app.php to the release
+      - name: Test device lifecycle
+        working-directory: server
+        run: php tests/device_lifecycle_test.php
+      - name: Attach server files to the release
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.event.release.tag_name }}" server/dist/app.php --clobber
+        run: gh release upload "${{ github.event.release.tag_name }}" server/dist/app.php server/dist/style.css --clobber
 
   mobile-build:
     name: Build Android APK

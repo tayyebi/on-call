@@ -3,6 +3,9 @@ package com.tayyebi.oncall;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 /** Thin wrapper around the app's single SharedPreferences file. */
 public final class Prefs {
 
@@ -14,6 +17,8 @@ public final class Prefs {
     private static final String KEY_CONNECTED_SINCE = "connected_since";
     private static final String KEY_LAST_SUCCESS = "last_success";
     private static final String KEY_UNREACHABLE_NOTIFIED = "unreachable_notified";
+    private static final String KEY_COMMAND_LOG = "command_log";
+    private static final int MAX_LOG_ENTRIES = 100;
 
     private final SharedPreferences prefs;
 
@@ -83,5 +88,36 @@ public final class Prefs {
 
     public void setUnreachableNotified(boolean notified) {
         prefs.edit().putBoolean(KEY_UNREACHABLE_NOTIFIED, notified).apply();
+    }
+
+    public void logCommand(String type, String detail, String status, String result) {
+        try {
+            JSONArray log = getCommandLog();
+            JSONObject entry = new JSONObject();
+            entry.put("time", System.currentTimeMillis());
+            entry.put("type", type);
+            entry.put("detail", detail);
+            entry.put("status", status);
+            entry.put("result", result);
+            log.put(entry);
+            while (log.length() > MAX_LOG_ENTRIES) {
+                log.remove(0);
+            }
+            prefs.edit().putString(KEY_COMMAND_LOG, log.toString()).apply();
+        } catch (Exception ignored) {
+        }
+    }
+
+    public JSONArray getCommandLog() {
+        String raw = prefs.getString(KEY_COMMAND_LOG, "[]");
+        try {
+            return new JSONArray(raw);
+        } catch (Exception e) {
+            return new JSONArray();
+        }
+    }
+
+    public void clearCommandLog() {
+        prefs.edit().remove(KEY_COMMAND_LOG).apply();
     }
 }

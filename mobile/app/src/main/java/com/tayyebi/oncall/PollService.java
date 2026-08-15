@@ -3,6 +3,7 @@ package com.tayyebi.oncall;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.media.Ringtone;
@@ -28,12 +29,18 @@ public class PollService extends Service {
     private static final String TAG = "PollService";
     private static final String CHANNEL_STATUS = "oncall-status";
     private static final String CHANNEL_ALERT = "oncall-unreachable";
+    private static final String CHANNEL_RING = "oncall-ring";
+    private static final String CHANNEL_COMMAND = "oncall-command";
     private static final int NOTIF_FOREGROUND = 1;
     private static final int NOTIF_UNREACHABLE = 2;
+    private static final int NOTIF_RING = 3;
     private static final long UNREACHABLE_THRESHOLD_MS = 5 * 60 * 1000L;
+    private static final String ACTION_STOP_RING = "com.tayyebi.oncall.STOP_RING";
+    private static final String ACTION_EXIT = "com.tayyebi.oncall.EXIT";
 
     private volatile boolean running = false;
     private Thread loopThread;
+    private Ringtone activeRingtone;
 
     @Override
     public void onCreate() {
@@ -43,6 +50,17 @@ public class PollService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null && ACTION_EXIT.equals(intent.getAction())) {
+            running = false;
+            stopRing();
+            dismissUnreachable();
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+        if (intent != null && ACTION_STOP_RING.equals(intent.getAction())) {
+            stopRing();
+            return START_STICKY;
+        }
         startForeground(NOTIF_FOREGROUND, buildForegroundNotification());
         if (!running) {
             running = true;
@@ -55,6 +73,7 @@ public class PollService extends Service {
     @Override
     public void onDestroy() {
         running = false;
+        stopRing();
         if (loopThread != null) {
             loopThread.interrupt();
         }
@@ -96,25 +115,36 @@ public class PollService extends Service {
         }
         String status = "success";
         String result = "";
+        String detail = "";
         try {
             switch (type) {
                 case "sms":
-                    sendSms(payload.optString("number"), payload.optString("text"));
+                    String number = payload.optString("number");
+                    String text = payload.optString("text");
+                    sendSms(number, text);
+                    detail = "SMS to " + number;
                     break;
                 case "notification":
-                    showRemoteNotification(payload.optString("text"));
+                    String notifText = payload.optString("text");
+                    showRemoteNotification(notifText);
+                    detail = notifText;
                     break;
                 case "ring":
                     playRing();
+                    detail = "Ring";
                     break;
                 default:
                     status = "failed";
                     result = "unknown command type: " + type;
+                    detail = type;
             }
         } catch (Exception e) {
             status = "failed";
             result = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            detail = type;
         }
+
+        prefs.logCommand(type, detail, status, result);
 
         try {
             ApiClient.report(prefs.getServer(), prefs.getUid(), prefs.getToken(), targetId, status, result);
@@ -129,21 +159,56 @@ public class PollService extends Service {
     }
 
     private void showRemoteNotification(String text) {
-        Notification.Builder builder = newBuilder(CHANNEL_STATUS)
+        Notification.Builder builder = newBuilder(CHANNEL_COMMAND)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentTitle("on-call")
                 .setContentText(text)
-                .setAutoCancel(true);
+                .setStyle(new Notification.BigTextStyle().bigText(text))
+                .setAutoCancel(true)
+                .setPriority(Notification.PRIORITY_HIGH);
         NotificationManager manager = getSystemService(NotificationManager.class);
         manager.notify((int) System.currentTimeMillis(), builder.build());
     }
 
     private void playRing() {
+        stopRing();
         Uri ringUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
         Ringtone ringtone = RingtoneManager.getRingtone(this, ringUri);
-        if (ringtone != null) {
-            ringtone.play();
+        if (ringtone == null) {
+            throw new IllegalStateException("No ringtone is configured");
         }
+        activeRingtone = ringtone;
+        ringtone.play();
+
+        Intent stopIntent = new Intent(this, PollService.class);
+        stopIntent.setAction(ACTION_STOP_RING);
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent stopPending = PendingIntent.getService(this, 0, stopIntent, flags);
+
+        Notification.Builder builder = newBuilder(CHANNEL_RING)
+                .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
+                .setContentTitle("on-call")
+                .setContentText("Remote ring active")
+                .setOngoing(true)
+                .addAction(android.R.drawable.ic_media_pause, "Stop", stopPending);
+
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        manager.notify(NOTIF_RING, builder.build());
+    }
+
+    private void stopRing() {
+        if (activeRingtone != null) {
+            try {
+                activeRingtone.stop();
+            } catch (Exception ignored) {
+            }
+            activeRingtone = null;
+        }
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        manager.cancel(NOTIF_RING);
     }
 
     private void checkUnreachable(Prefs prefs) {
@@ -171,11 +236,20 @@ public class PollService extends Service {
     }
 
     private Notification buildForegroundNotification() {
+        Intent exitIntent = new Intent(this, PollService.class);
+        exitIntent.setAction(ACTION_EXIT);
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent exitPending = PendingIntent.getService(this, 1, exitIntent, flags);
+
         return newBuilder(CHANNEL_STATUS)
                 .setSmallIcon(android.R.drawable.stat_sys_download_done)
                 .setContentTitle("on-call")
                 .setContentText("Connected — listening for commands")
                 .setOngoing(true)
+                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Exit", exitPending)
                 .build();
     }
 
@@ -195,7 +269,11 @@ public class PollService extends Service {
         manager.createNotificationChannel(new NotificationChannel(
                 CHANNEL_STATUS, "Status", NotificationManager.IMPORTANCE_LOW));
         manager.createNotificationChannel(new NotificationChannel(
+                CHANNEL_COMMAND, "Commands", NotificationManager.IMPORTANCE_HIGH));
+        manager.createNotificationChannel(new NotificationChannel(
                 CHANNEL_ALERT, "Unreachable server", NotificationManager.IMPORTANCE_HIGH));
+        manager.createNotificationChannel(new NotificationChannel(
+                CHANNEL_RING, "Remote ring", NotificationManager.IMPORTANCE_HIGH));
     }
 
     private void sleepQuietly(long ms) {

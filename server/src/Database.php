@@ -35,10 +35,17 @@ class OC_Database
             ip TEXT,
             last_seen TEXT,
             paired INTEGER NOT NULL DEFAULT 0,
+            disabled INTEGER NOT NULL DEFAULT 0,
             pair_code TEXT,
             pair_code_expires TEXT,
             created_at TEXT NOT NULL DEFAULT (datetime(\'now\'))
         )');
+
+        $deviceColumns = $pdo->query('PRAGMA table_info(devices)')->fetchAll();
+        $deviceColumnNames = array_column($deviceColumns, 'name');
+        if (!in_array('disabled', $deviceColumnNames, true)) {
+            $pdo->exec('ALTER TABLE devices ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0');
+        }
 
         $pdo->exec('CREATE TABLE IF NOT EXISTS calls (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

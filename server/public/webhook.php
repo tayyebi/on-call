@@ -16,10 +16,10 @@ $ip = $_SERVER['REMOTE_ADDR'] ?? '';
 function oc_resolve_targets($devices): array
 {
     if ($devices === 'all') {
-        return array_map(static fn ($d) => (int) $d['id'], OC_Devices::all());
+        return OC_Devices::activeIds(array_column(OC_Devices::all(), 'id'));
     }
     if (is_array($devices)) {
-        return array_map('intval', $devices);
+        return OC_Devices::activeIds($devices);
     }
     return [];
 }

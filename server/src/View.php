@@ -1,5 +1,5 @@
 <?php
-/** Semantic-HTML page shell. No CSS, no JS, no class/id attributes anywhere. */
+/** Shared semantic-HTML page shell. */
 class OC_View
 {
     public static function e(?string $value): string
@@ -11,6 +11,7 @@ class OC_View
     {
         echo "<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\">"
             . "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+            . "<link rel=\"stylesheet\" href=\"style.css\">"
             . "<title>on-call — " . self::e($title) . "</title></head>\n<body>\n";
         echo "<header><h1>on-call</h1></header>\n";
         if ($withNav) {

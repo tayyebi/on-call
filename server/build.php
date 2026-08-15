@@ -55,7 +55,8 @@ $__routes[$__page]();
 PHP;
 
 file_put_contents($outDir . '/app.php', $out);
-fwrite(STDOUT, "Built dist/app.php\n");
+copy($publicDir . '/style.css', $outDir . '/style.css');
+fwrite(STDOUT, "Built dist/app.php and dist/style.css\n");
 
 function strip_leading_php_tag(string $code): string
 {

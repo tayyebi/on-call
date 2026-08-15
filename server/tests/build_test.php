@@ -7,6 +7,7 @@
 declare(strict_types=1);
 
 $distFile = __DIR__ . '/../dist/app.php';
+$styleFile = __DIR__ . '/../dist/style.css';
 $failures = [];
 
 function check(array &$failures, bool $ok, string $message): void
@@ -18,6 +19,7 @@ function check(array &$failures, bool $ok, string $message): void
 }
 
 check($failures, is_file($distFile), "dist/app.php exists (run php build.php first)");
+check($failures, is_file($styleFile), "dist/style.css exists (run php build.php first)");
 if (!is_file($distFile)) {
     fwrite(STDERR, "\ncannot continue without dist/app.php\n");
     exit(1);
@@ -44,6 +46,7 @@ foreach (['index', 'api', 'call', 'command-center', 'devices', 'login', 'logout'
 
 check($failures, str_contains($source, 'bootstrap.php') === false, "bootstrap.php require is stripped from merged pages");
 check($failures, str_contains($source, "OC_Env::load(__DIR__ . '/.env');"), "front controller loads .env");
+check($failures, str_contains($source, 'href=\"style.css\"'), "pages load the shared stylesheet");
 
 // Each route closure must open directly in PHP-code mode. If it closes
 // into HTML mode instead, the page's own leading PHP statements (auth

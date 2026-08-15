@@ -4,7 +4,9 @@ class OC_Devices
 {
     public static function all(): array
     {
-        $stmt = OC_Database::get()->query('SELECT * FROM devices WHERE paired = 1 ORDER BY last_seen DESC');
+        $stmt = OC_Database::get()->query(
+            'SELECT * FROM devices WHERE paired = 1 OR model IS NOT NULL ORDER BY last_seen DESC, id DESC'
+        );
         return $stmt->fetchAll();
     }
 
@@ -17,7 +19,9 @@ class OC_Devices
 
     public static function findByUidToken(string $uid, string $token): ?array
     {
-        $stmt = OC_Database::get()->prepare('SELECT * FROM devices WHERE uid = ? AND token = ? AND paired = 1');
+        $stmt = OC_Database::get()->prepare(
+            'SELECT * FROM devices WHERE uid = ? AND token = ? AND paired = 1 AND disabled = 0'
+        );
         $stmt->execute([$uid, $token]);
         return $stmt->fetch() ?: null;
     }
@@ -66,7 +70,8 @@ class OC_Devices
         $uid = bin2hex(random_bytes(8));
         $token = bin2hex(random_bytes(24));
         $update = $db->prepare(
-            'UPDATE devices SET uid = ?, token = ?, model = ?, ip = ?, last_seen = datetime(\'now\'), paired = 1 WHERE id = ?'
+            'UPDATE devices SET uid = ?, token = ?, model = ?, ip = ?, last_seen = datetime(\'now\'), paired = 1,
+             disabled = 0, pair_code = NULL, pair_code_expires = NULL WHERE id = ?'
         );
         $update->execute([$uid, $token, $model, $ip, $row['id']]);
 
@@ -79,10 +84,52 @@ class OC_Devices
         $stmt->execute([$ip, $id]);
     }
 
+    public static function renewPairCode(int $id): ?string
+    {
+        $device = self::find($id);
+        if (!$device || (int) $device['disabled'] === 1) {
+            return null;
+        }
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expires = date('Y-m-d H:i:s', time() + 300);
+        $stmt = OC_Database::get()->prepare(
+            'UPDATE devices SET uid = NULL, token = NULL, paired = 0, pair_code = ?, pair_code_expires = ? WHERE id = ?'
+        );
+        $stmt->execute([$code, $expires, $id]);
+        return $code;
+    }
+
+    public static function setDisabled(int $id, bool $disabled): void
+    {
+        $stmt = OC_Database::get()->prepare('UPDATE devices SET disabled = ? WHERE id = ?');
+        $stmt->execute([$disabled ? 1 : 0, $id]);
+    }
+
+    public static function remove(int $id): void
+    {
+        $stmt = OC_Database::get()->prepare('DELETE FROM devices WHERE id = ?');
+        $stmt->execute([$id]);
+    }
+
+    /** @param int[] $ids @return int[] */
+    public static function activeIds(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn ($id) => $id > 0)));
+        if (!$ids) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = OC_Database::get()->prepare(
+            "SELECT id FROM devices WHERE paired = 1 AND disabled = 0 AND id IN ($placeholders)"
+        );
+        $stmt->execute($ids);
+        return array_map('intval', array_column($stmt->fetchAll(), 'id'));
+    }
+
     /** Devices considered online: seen within the poll timeout window. */
     public static function isOnline(array $device): bool
     {
-        if (!$device['last_seen']) {
+        if ((int) $device['paired'] !== 1 || (int) $device['disabled'] === 1 || !$device['last_seen']) {
             return false;
         }
         return (time() - strtotime($device['last_seen'])) < 45;

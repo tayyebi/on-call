@@ -14,6 +14,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.view.View;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.text.DateFormat;
 import java.util.Date;
 
@@ -41,6 +44,7 @@ public class MainActivity extends Activity {
     private LinearLayout connectedPanel;
     private Button connectedSinceButton;
     private Button disconnectButton;
+    private TextView commandHistoryText;
 
     private final Runnable refreshRunnable = new Runnable() {
         @Override
@@ -66,6 +70,7 @@ public class MainActivity extends Activity {
         connectedPanel = findViewById(R.id.connectedPanel);
         connectedSinceButton = findViewById(R.id.connectedSinceButton);
         disconnectButton = findViewById(R.id.disconnectButton);
+        commandHistoryText = findViewById(R.id.commandHistoryText);
 
         serverIpInput.setText(prefs.getServer());
 
@@ -127,12 +132,46 @@ public class MainActivity extends Activity {
                 break;
             case HEALTHY:
                 statusText.setText("Connected");
-                connectForm.setVisibility(LinearLayout.GONE);
+                connectForm.setVisibility(LinearLayout.VISIBLE);
+                retryButton.setVisibility(View.GONE);
+                connectButton.setVisibility(View.VISIBLE);
                 connectedPanel.setVisibility(LinearLayout.VISIBLE);
                 String since = DateFormat.getDateTimeInstance().format(new Date(prefs.getConnectedSince()));
                 connectedSinceButton.setText("Connected since " + since);
                 break;
         }
+        renderCommandHistory();
+    }
+
+    private void renderCommandHistory() {
+        JSONArray log = prefs.getCommandLog();
+        if (log.length() == 0) {
+            commandHistoryText.setText("No commands received yet.");
+            return;
+        }
+
+        StringBuilder text = new StringBuilder();
+        for (int i = log.length() - 1; i >= 0; i--) {
+            JSONObject entry = log.optJSONObject(i);
+            if (entry == null) {
+                continue;
+            }
+            if (text.length() > 0) {
+                text.append("\n\n");
+            }
+            String time = DateFormat.getDateTimeInstance().format(new Date(entry.optLong("time")));
+            text.append(time).append(" - ").append(entry.optString("type", "command"));
+            String detail = entry.optString("detail");
+            if (!detail.isEmpty()) {
+                text.append("\n").append(detail);
+            }
+            text.append("\nStatus: ").append(entry.optString("status", "unknown"));
+            String result = entry.optString("result");
+            if (!result.isEmpty()) {
+                text.append("\nResult: ").append(result);
+            }
+        }
+        commandHistoryText.setText(text);
     }
 
     private void connect() {
