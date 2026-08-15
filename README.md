@@ -1,2 +1,4 @@
 # on-call
-Remotely control your Android app, to display notifications and send SMS
+Remotely control your mobile app
+
+services <----> api <----> server <---> long polling <---> mobile
