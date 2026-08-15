@@ -13,8 +13,6 @@ import android.os.IBinder;
 import android.telephony.SmsManager;
 import android.util.Log;
 
-import androidx.core.app.NotificationCompat;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -131,7 +129,7 @@ public class PollService extends Service {
     }
 
     private void showRemoteNotification(String text) {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_STATUS)
+        Notification.Builder builder = newBuilder(CHANNEL_STATUS)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentTitle("on-call")
                 .setContentText(text)
@@ -156,12 +154,12 @@ public class PollService extends Service {
         boolean unreachable = System.currentTimeMillis() - since > UNREACHABLE_THRESHOLD_MS;
         if (unreachable && !prefs.isUnreachableNotified()) {
             prefs.setUnreachableNotified(true);
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ALERT)
+            Notification.Builder builder = newBuilder(CHANNEL_ALERT)
                     .setSmallIcon(android.R.drawable.stat_notify_error)
                     .setContentTitle("on-call: server unreachable")
                     .setContentText("Could not reach the configured server for over 5 minutes.")
                     .setOngoing(true)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH);
+                    .setPriority(Notification.PRIORITY_HIGH);
             NotificationManager manager = getSystemService(NotificationManager.class);
             manager.notify(NOTIF_UNREACHABLE, builder.build());
         }
@@ -173,12 +171,20 @@ public class PollService extends Service {
     }
 
     private Notification buildForegroundNotification() {
-        return new NotificationCompat.Builder(this, CHANNEL_STATUS)
+        return newBuilder(CHANNEL_STATUS)
                 .setSmallIcon(android.R.drawable.stat_sys_download_done)
                 .setContentTitle("on-call")
                 .setContentText("Connected — listening for commands")
                 .setOngoing(true)
                 .build();
+    }
+
+    @SuppressWarnings("deprecation")
+    private Notification.Builder newBuilder(String channelId) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            return new Notification.Builder(this, channelId);
+        }
+        return new Notification.Builder(this);
     }
 
     private void createChannels() {

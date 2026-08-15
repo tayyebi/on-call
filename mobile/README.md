@@ -9,8 +9,8 @@ no dart
 
 ## Layout
 
-Plain Gradle Android project (no Maven build, no third-party build/UI
-frameworks) under `app/`:
+Plain Android project, no build framework at all (no Gradle, no Maven, no
+third-party build/UI libraries) under `app/`:
 
 - `MainActivity` — the three states from `MainActivity.txt`: disconnected
   (server address + pair code form), paired-but-unreachable (same form plus a
@@ -27,7 +27,17 @@ frameworks) under `app/`:
 
 ## Building
 
+Requires an Android SDK with `platforms;android-34` and a `build-tools`
+version installed, and `ANDROID_SDK_ROOT` (or `ANDROID_HOME`) pointing at it.
+`build.sh` drives `aapt2`, `javac`, `d8`, `zipalign`, and `apksigner`
+directly — no Gradle, no wrapper jar to vendor or trust.
+
 ```
-./gradlew assembleDebug
-./gradlew assembleRelease   # only run by CI, on release (see .github/workflows/ci.yml)
+./build.sh
 ```
+
+Produces `build/outputs/apk/release/app-release.apk`, signed with an
+auto-generated debug keystore (`build/debug.keystore`) unless
+`ONCALL_KEYSTORE` / `ONCALL_KEYSTORE_PASS` / `ONCALL_KEY_PASS` point at a
+real one. CI runs the same script on release (see
+`.github/workflows/ci.yml`).

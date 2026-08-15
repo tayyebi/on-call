@@ -14,8 +14,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.core.app.ActivityCompat;
-
 import java.text.DateFormat;
 import java.util.Date;
 
@@ -90,10 +88,10 @@ public class MainActivity extends Activity {
 
     private void requestRuntimePermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ActivityCompat.requestPermissions(this,
+            requestPermissions(
                     new String[]{Manifest.permission.POST_NOTIFICATIONS, Manifest.permission.SEND_SMS}, 1);
         } else {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.SEND_SMS}, 1);
+            requestPermissions(new String[]{Manifest.permission.SEND_SMS}, 1);
         }
     }
 
