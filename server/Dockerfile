@@ -13,6 +13,12 @@ COPY . /var/www/html
 RUN mkdir -p /var/www/html/data \
     && chown -R www-data:www-data /var/www/html/data
 
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 VOLUME /var/www/html/data
 
 EXPOSE 80
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["apache2-foreground"]
