@@ -60,11 +60,13 @@ echo "linking resources..."
 echo "compiling java..."
 JAVA_SOURCES="$OUT/sources.txt"
 find "$SRC/java" "$GEN" -name '*.java' > "$JAVA_SOURCES"
-# -bootclasspath is only accepted by javac with target <= 8 (9+ requires
-# --release / the module system instead); the sources use nothing newer
-# than Java 8 syntax, so target 8 is both correct and sufficient here.
-javac -encoding UTF-8 -source 8 -target 8 -nowarn \
-    -bootclasspath "$PLATFORM" \
+# android.jar goes on the classpath, not -bootclasspath: it's a stub jar
+# without java.lang.invoke.LambdaMetafactory's bootstrap method, so
+# replacing the JDK's own bootclasspath with it breaks lambda compilation.
+# D8 desugars the resulting invokedynamic calls for pre-Java-8 Android
+# runtimes at dex time, same as Gradle/AGP does.
+javac -encoding UTF-8 -source 11 -target 11 -nowarn \
+    -classpath "$PLATFORM" \
     -d "$CLASSES" \
     @"$JAVA_SOURCES"
 
