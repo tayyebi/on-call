@@ -61,7 +61,7 @@ echo "compiling java..."
 JAVA_SOURCES="$OUT/sources.txt"
 find "$SRC/java" "$GEN" -name '*.java' > "$JAVA_SOURCES"
 javac -encoding UTF-8 -source 11 -target 11 -nowarn \
-    -bootclasspath "$PLATFORM" \
+    --system none -bootclasspath "$PLATFORM" \
     -d "$CLASSES" \
     @"$JAVA_SOURCES"
 
