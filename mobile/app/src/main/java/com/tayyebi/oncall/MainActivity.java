@@ -12,7 +12,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
+import android.view.View;
 
 import java.text.DateFormat;
 import java.util.Date;
@@ -32,6 +32,7 @@ public class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     private TextView statusText;
+    private TextView messageLabel;
     private LinearLayout connectForm;
     private EditText serverIpInput;
     private EditText pairCodeInput;
@@ -56,6 +57,7 @@ public class MainActivity extends Activity {
         prefs = new Prefs(this);
 
         statusText = findViewById(R.id.statusText);
+        messageLabel = findViewById(R.id.messageLabel);
         connectForm = findViewById(R.id.connectForm);
         serverIpInput = findViewById(R.id.serverIpInput);
         pairCodeInput = findViewById(R.id.pairCodeInput);
@@ -112,15 +114,15 @@ public class MainActivity extends Activity {
             case DISCONNECTED:
                 statusText.setText("Not connected");
                 connectForm.setVisibility(LinearLayout.VISIBLE);
-                retryButton.setVisibility(android.view.View.GONE);
-                connectButton.setVisibility(android.view.View.VISIBLE);
+                retryButton.setVisibility(View.GONE);
+                connectButton.setVisibility(View.VISIBLE);
                 connectedPanel.setVisibility(LinearLayout.GONE);
                 break;
             case UNREACHABLE:
                 statusText.setText("Paired, but the server is unreachable");
                 connectForm.setVisibility(LinearLayout.VISIBLE);
-                retryButton.setVisibility(android.view.View.VISIBLE);
-                connectButton.setVisibility(android.view.View.VISIBLE);
+                retryButton.setVisibility(View.VISIBLE);
+                connectButton.setVisibility(View.VISIBLE);
                 connectedPanel.setVisibility(LinearLayout.GONE);
                 break;
             case HEALTHY:
@@ -136,8 +138,10 @@ public class MainActivity extends Activity {
     private void connect() {
         String server = serverIpInput.getText().toString().trim();
         String code = pairCodeInput.getText().toString().trim();
+        messageLabel.setVisibility(View.GONE);
         if (server.isEmpty() || code.isEmpty()) {
-            Toast.makeText(this, "Enter the server address and the pair code", Toast.LENGTH_SHORT).show();
+            messageLabel.setText("Enter the server address and the pair code");
+            messageLabel.setVisibility(View.VISIBLE);
             return;
         }
         connectButton.setEnabled(false);
@@ -150,12 +154,14 @@ public class MainActivity extends Activity {
                 startPolling();
                 runOnUiThread(() -> {
                     connectButton.setEnabled(true);
+                    messageLabel.setVisibility(View.GONE);
                     renderState();
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     connectButton.setEnabled(true);
-                    Toast.makeText(this, "Could not pair: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    messageLabel.setText("Could not pair: " + e.getMessage());
+                    messageLabel.setVisibility(View.VISIBLE);
                 });
             }
         }).start();
@@ -173,7 +179,7 @@ public class MainActivity extends Activity {
             prefs.setServer(server);
         }
         startPolling();
-        Toast.makeText(this, "Retrying connection...", Toast.LENGTH_SHORT).show();
+        messageLabel.setVisibility(View.GONE);
         renderState();
     }
 

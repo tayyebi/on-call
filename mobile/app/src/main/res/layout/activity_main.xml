@@ -10,7 +10,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="16sp"
-        android:paddingBottom="16dp" />
+        android:paddingBottom="8dp" />
+
+    <TextView
+        android:id="@+id/messageLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#D32F2F"
+        android:textSize="14sp"
+        android:paddingBottom="8dp"
+        android:visibility="gone" />
 
     <!-- Shown when disconnected, or connected-but-unreachable (form stays
          editable in both cases so the user can change server/code). -->
