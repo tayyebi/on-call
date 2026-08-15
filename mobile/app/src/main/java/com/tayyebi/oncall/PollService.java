@@ -157,6 +157,10 @@ public class PollService extends Service {
     }
 
     private void sendSms(String number, String text) {
+        number = number.trim();
+        if (!number.matches("\\+[1-9][0-9]{7,14}")) {
+            throw new IllegalArgumentException("SMS destination must be in E.164 format");
+        }
         SmsManager smsManager = SmsManager.getDefault();
         smsManager.sendTextMessage(number, null, text, null, null);
     }

@@ -9,6 +9,15 @@ mkdir($dataDir, 0775, true);
 putenv('DATA_DIR=' . $dataDir);
 
 try {
+    if (OC_Calls::normalizeSmsNumber(' +15551234567 ') !== '+15551234567') {
+        throw new RuntimeException('valid SMS number was not normalized');
+    }
+    foreach (['15551234567', '+0123456789', '+1 555 123 4567', '+1234567', '+1234567890123456', null] as $number) {
+        if (OC_Calls::normalizeSmsNumber($number) !== null) {
+            throw new RuntimeException('invalid SMS number was accepted');
+        }
+    }
+
     $db = OC_Database::get();
     $code = OC_Devices::startOnboard();
     $claim = OC_Devices::claimPairCode($code, 'test-model', '127.0.0.1');

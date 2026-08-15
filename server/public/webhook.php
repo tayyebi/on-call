@@ -27,12 +27,18 @@ function oc_resolve_targets($devices): array
 switch ($action) {
     case 'sms':
         $targets = oc_resolve_targets($body['devices'] ?? []);
-        if (($body['number'] ?? '') === '' || !$targets) {
+        $number = OC_Calls::normalizeSmsNumber($body['number'] ?? null);
+        if ($number === null) {
             http_response_code(422);
-            echo json_encode(['error' => 'number and devices are required']);
+            echo json_encode(['error' => 'number must be in E.164 format, for example +15551234567']);
             break;
         }
-        $callId = OC_Calls::create('sms', ['number' => $body['number'], 'text' => $body['text'] ?? ''], $targets, $ip);
+        if (!$targets) {
+            http_response_code(422);
+            echo json_encode(['error' => 'devices is required']);
+            break;
+        }
+        $callId = OC_Calls::create('sms', ['number' => $number, 'text' => $body['text'] ?? ''], $targets, $ip);
         echo json_encode(['call_id' => $callId]);
         break;
 

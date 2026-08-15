@@ -7,6 +7,16 @@
  */
 class OC_Calls
 {
+    public static function normalizeSmsNumber($number): ?string
+    {
+        if (!is_string($number)) {
+            return null;
+        }
+
+        $number = trim($number);
+        return preg_match('/^\+[1-9][0-9]{7,14}$/D', $number) === 1 ? $number : null;
+    }
+
     /**
      * @param int[] $deviceIds
      */

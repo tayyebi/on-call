@@ -58,7 +58,12 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "number": { "type": "string", "description": "sms only" },
+                  "number": {
+                    "type": "string",
+                    "description": "SMS destination in E.164 format",
+                    "pattern": "^\\+[1-9][0-9]{7,14}$",
+                    "example": "+15551234567"
+                  },
                   "text": { "type": "string", "description": "sms and notification" },
                   "devices": { "$ref": "#/components/schemas/Devices" }
                 },
@@ -82,7 +87,7 @@
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
           },
           "422": {
-            "description": "Missing required fields",
+            "description": "Missing or invalid required fields",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
           }
         }

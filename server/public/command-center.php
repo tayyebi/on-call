@@ -21,8 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ((int) $device['paired'] !== 1 || (int) $device['disabled'] === 1) {
         $notice = 'Enable and pair this device before sending commands.';
     } elseif ($action === 'sms') {
-        OC_Calls::create('sms', ['number' => $_POST['number'] ?? '', 'text' => $_POST['text'] ?? ''], [$deviceId], $ip);
-        $notice = 'SMS command queued.';
+        $number = OC_Calls::normalizeSmsNumber($_POST['number'] ?? null);
+        if ($number === null) {
+            $notice = 'Enter an international number in E.164 format, for example +15551234567.';
+        } else {
+            OC_Calls::create('sms', ['number' => $number, 'text' => $_POST['text'] ?? ''], [$deviceId], $ip);
+            $notice = 'SMS command queued.';
+        }
     } elseif ($action === 'notification') {
         OC_Calls::create('notification', ['text' => $_POST['notification_text'] ?? ''], [$deviceId], $ip);
         $notice = 'Notification command queued.';
@@ -57,7 +62,7 @@ OC_View::start('Command center');
 <input type="hidden" name="device" value="<?= $deviceId ?>">
 <input type="hidden" name="action" value="sms">
 <h3>Send SMS</h3>
-<p><label>Number <input type="tel" name="number" required></label></p>
+<p><label>Number <input type="tel" name="number" value="<?= OC_View::e($_POST['number'] ?? '') ?>" placeholder="+15551234567" pattern="\+[1-9][0-9]{7,14}" required></label></p>
 <p><label>Text <textarea name="text" required></textarea></label></p>
 <p><button type="submit">Send SMS</button></p>
 </form>
