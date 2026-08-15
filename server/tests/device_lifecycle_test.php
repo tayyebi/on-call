@@ -22,6 +22,11 @@ try {
     $deviceId = (int) $device['id'];
     $callId = OC_Calls::create('ring', [], [$deviceId], '127.0.0.1');
     $targetBefore = OC_Calls::targets($callId);
+    OC_Calls::create('notification', ['text' => 'test notification'], [$deviceId], '127.0.0.1');
+    $pending = OC_Calls::pendingFor($deviceId);
+    if (($pending[1]['payload']['text'] ?? '') !== 'test notification') {
+        throw new RuntimeException('pending command payload was not decoded');
+    }
 
     $renewCode = OC_Devices::renewPairCode($deviceId);
     $renewed = OC_Devices::find($deviceId);

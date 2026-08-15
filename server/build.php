@@ -56,7 +56,8 @@ PHP;
 
 file_put_contents($outDir . '/app.php', $out);
 copy($publicDir . '/style.css', $outDir . '/style.css');
-fwrite(STDOUT, "Built dist/app.php and dist/style.css\n");
+copy($publicDir . '/opendocs.json', $outDir . '/opendocs.json');
+fwrite(STDOUT, "Built dist/app.php, dist/style.css, and dist/opendocs.json\n");
 
 function strip_leading_php_tag(string $code): string
 {

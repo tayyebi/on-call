@@ -40,7 +40,7 @@ put both values in `.env`.
 
 ## Webhook API
 
-See `openapi.json`. All requests need `Authorization: Bearer <API_TOKEN>`.
+See `public/opendocs.json`. All requests need `Authorization: Bearer <API_TOKEN>`.
 
 - `POST /webhook.php?action=sms` `{ "number", "text", "devices" }`
 - `POST /webhook.php?action=notification` `{ "text", "devices" }`

@@ -36,7 +36,7 @@ public class PollService extends Service {
     private static final int NOTIF_RING = 3;
     private static final long UNREACHABLE_THRESHOLD_MS = 5 * 60 * 1000L;
     private static final String ACTION_STOP_RING = "com.tayyebi.oncall.STOP_RING";
-    private static final String ACTION_EXIT = "com.tayyebi.oncall.EXIT";
+    private static final String ACTION_STOP = "com.tayyebi.oncall.STOP";
 
     private volatile boolean running = false;
     private Thread loopThread;
@@ -50,10 +50,11 @@ public class PollService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && ACTION_EXIT.equals(intent.getAction())) {
+        if (intent != null && ACTION_STOP.equals(intent.getAction())) {
             running = false;
             stopRing();
             dismissUnreachable();
+            stopForeground(true);
             stopSelf();
             return START_NOT_STICKY;
         }
@@ -89,7 +90,8 @@ public class PollService extends Service {
         Prefs prefs = new Prefs(this);
         while (running && prefs.isPaired()) {
             try {
-                JSONObject response = ApiClient.poll(prefs.getServer(), prefs.getUid(), prefs.getToken());
+                JSONObject response = ApiClient.poll(prefs.getServer(), prefs.getUid(), prefs.getToken(),
+                        prefs.allowsSelfSignedCertificate(prefs.getServer()));
                 prefs.markSuccess();
                 dismissUnreachable();
                 JSONArray commands = response.optJSONArray("commands");
@@ -147,7 +149,8 @@ public class PollService extends Service {
         prefs.logCommand(type, detail, status, result);
 
         try {
-            ApiClient.report(prefs.getServer(), prefs.getUid(), prefs.getToken(), targetId, status, result);
+            ApiClient.report(prefs.getServer(), prefs.getUid(), prefs.getToken(), targetId, status, result,
+                    prefs.allowsSelfSignedCertificate(prefs.getServer()));
         } catch (Exception e) {
             Log.w(TAG, "report failed: " + e.getMessage());
         }
@@ -237,7 +240,7 @@ public class PollService extends Service {
 
     private Notification buildForegroundNotification() {
         Intent exitIntent = new Intent(this, PollService.class);
-        exitIntent.setAction(ACTION_EXIT);
+        exitIntent.setAction(ACTION_STOP);
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             flags |= PendingIntent.FLAG_IMMUTABLE;
@@ -247,9 +250,9 @@ public class PollService extends Service {
         return newBuilder(CHANNEL_STATUS)
                 .setSmallIcon(android.R.drawable.stat_sys_download_done)
                 .setContentTitle("on-call")
-                .setContentText("Connected — listening for commands")
+                .setContentText("Connected - listening for commands")
                 .setOngoing(true)
-                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Exit", exitPending)
+                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", exitPending)
                 .build();
     }
 

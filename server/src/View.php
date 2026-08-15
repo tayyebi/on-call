@@ -31,6 +31,7 @@ class OC_View
             . "<li><a href=\"devices.php\">Devices</a></li>\n"
             . "<li><a href=\"on-board.php\">On-board device</a></li>\n"
             . "<li><a href=\"api.php\">Call log</a></li>\n"
+            . "<li><a href=\"opendocs.json\">API docs</a></li>\n"
             . "<li><a href=\"logout.php\">Log out</a></li>\n"
             . "</ul>\n</nav>\n";
     }

@@ -18,6 +18,7 @@ public final class Prefs {
     private static final String KEY_LAST_SUCCESS = "last_success";
     private static final String KEY_UNREACHABLE_NOTIFIED = "unreachable_notified";
     private static final String KEY_COMMAND_LOG = "command_log";
+    private static final String KEY_SELF_SIGNED_SERVER = "self_signed_server";
     private static final int MAX_LOG_ENTRIES = 100;
 
     private final SharedPreferences prefs;
@@ -32,6 +33,20 @@ public final class Prefs {
 
     public void setServer(String server) {
         prefs.edit().putString(KEY_SERVER, server).apply();
+    }
+
+    public boolean allowsSelfSignedCertificate(String server) {
+        return server.trim().equals(prefs.getString(KEY_SELF_SIGNED_SERVER, ""));
+    }
+
+    public void allowSelfSignedCertificate(String server) {
+        prefs.edit().putString(KEY_SELF_SIGNED_SERVER, server.trim()).apply();
+    }
+
+    public void clearSelfSignedCertificate(String server) {
+        if (allowsSelfSignedCertificate(server)) {
+            prefs.edit().remove(KEY_SELF_SIGNED_SERVER).apply();
+        }
     }
 
     public String getUid() {

@@ -2,6 +2,7 @@ package com.tayyebi.oncall;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -18,7 +19,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.text.DateFormat;
+import java.security.cert.CertificateException;
 import java.util.Date;
+
+import javax.net.ssl.SSLHandshakeException;
 
 /**
  * Three states, per mobile/MainActivity.txt:
@@ -175,6 +179,10 @@ public class MainActivity extends Activity {
     }
 
     private void connect() {
+        connect(false);
+    }
+
+    private void connect(boolean acceptSelfSigned) {
         String server = serverIpInput.getText().toString().trim();
         String code = pairCodeInput.getText().toString().trim();
         messageLabel.setVisibility(View.GONE);
@@ -186,9 +194,15 @@ public class MainActivity extends Activity {
         connectButton.setEnabled(false);
         new Thread(() -> {
             try {
-                org.json.JSONObject result = ApiClient.pair(server, code, Build.MODEL);
+                boolean allowSelfSigned = acceptSelfSigned || prefs.allowsSelfSignedCertificate(server);
+                org.json.JSONObject result = ApiClient.pair(server, code, Build.MODEL, allowSelfSigned);
                 String uid = result.getString("uid");
                 String token = result.getString("token");
+                if (acceptSelfSigned) {
+                    prefs.allowSelfSignedCertificate(server);
+                } else if (!allowSelfSigned) {
+                    prefs.clearSelfSignedCertificate(server);
+                }
                 prefs.savePairing(server, uid, token);
                 startPolling();
                 runOnUiThread(() -> {
@@ -199,11 +213,35 @@ public class MainActivity extends Activity {
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     connectButton.setEnabled(true);
+                    if (!acceptSelfSigned && !prefs.allowsSelfSignedCertificate(server) && isCertificateError(e)) {
+                        showSelfSignedWarning(server);
+                        return;
+                    }
                     messageLabel.setText("Could not pair: " + e.getMessage());
                     messageLabel.setVisibility(View.VISIBLE);
                 });
             }
         }).start();
+    }
+
+    private void showSelfSignedWarning(String server) {
+        new AlertDialog.Builder(this)
+                .setTitle("Certificate warning")
+                .setMessage("The HTTPS certificate for " + server
+                        + " could not be verified. Continue only if you trust this server."
+                        + " Its certificate and hostname will not be verified.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Continue", (dialog, which) -> connect(true))
+                .show();
+    }
+
+    private boolean isCertificateError(Throwable error) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SSLHandshakeException || cause instanceof CertificateException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Retry: re-pair if a fresh code was entered, otherwise just refresh the connection. */

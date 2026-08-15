@@ -86,7 +86,12 @@ class OC_Calls
              ORDER BY cd.id'
         );
         $stmt->execute([$deviceId]);
-        return $stmt->fetchAll();
+        $commands = $stmt->fetchAll();
+        foreach ($commands as &$command) {
+            $command['payload'] = json_decode($command['payload'], true) ?: [];
+        }
+        unset($command);
+        return $commands;
     }
 
     public static function reportResult(int $targetId, string $status, string $result = ''): void

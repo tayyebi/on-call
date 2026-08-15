@@ -32,7 +32,7 @@ jobs:
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.event.release.tag_name }}" server/dist/app.php server/dist/style.css --clobber
+        run: gh release upload "${{ github.event.release.tag_name }}" server/dist/app.php server/dist/style.css server/dist/opendocs.json --clobber
 
   mobile-build:
     name: Build Android APK
