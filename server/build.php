@@ -37,7 +37,11 @@ foreach (glob($publicDir . '/*.php') as $file) {
     $body = strip_leading_php_tag(file_get_contents($file));
     // bootstrap.php require is unnecessary in the merged build; strip it.
     $body = preg_replace('/^\s*require(_once)?\s+__DIR__\s*\.\s*\'\/bootstrap\.php\';\s*$/m', '', $body);
-    $out .= "\$__routes['{$route}'] = function () {\n?>\n{$body}\n<?php\n};\n";
+    // $body already opens in PHP-code mode (its leading <?php was stripped)
+    // and manages its own <?php/?> transitions for inline HTML, so it must
+    // be concatenated directly — wrapping it in ?> ... <?php would dump its
+    // leading PHP statements (auth checks, data fetch) as literal text.
+    $out .= "\$__routes['{$route}'] = function () {\n{$body}\n};\n";
 }
 
 $out .= <<<'PHP'

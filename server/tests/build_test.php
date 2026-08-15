@@ -25,8 +25,7 @@ if (!is_file($distFile)) {
 
 $source = file_get_contents($distFile);
 
-check($failures, str_starts_with($source, "<?php"), "starts with a single <?php tag");
-check($failures, substr_count($source, "<?php") === 1, "merged file has exactly one opening <?php tag");
+check($failures, str_starts_with($source, "<?php"), "starts with a <?php tag");
 
 $lintOutput = [];
 $lintStatus = 0;
@@ -43,6 +42,23 @@ foreach (['index', 'api', 'call', 'command-center', 'devices', 'login', 'logout'
 
 check($failures, str_contains($source, 'bootstrap.php') === false, "bootstrap.php require is stripped from merged pages");
 check($failures, str_contains($source, "OC_Env::load(__DIR__ . '/.env');"), "front controller loads .env");
+
+// Each route closure must open directly in PHP-code mode. If it opens with
+// "?>" instead, the page's own leading PHP statements (auth checks, data
+// fetch) get emitted as literal text instead of executing — see build.php.
+check(
+    $failures,
+    (bool) !preg_match('/\$__routes\[[^\]]+\]\s*=\s*function\s*\(\)\s*\{\s*\?>/', $source),
+    "no route closure opens straight into HTML mode"
+);
+
+// api.php does real work (auth guard, DB read) before its first echoed
+// HTML; confirm that code survived the merge as executable PHP, not text.
+check(
+    $failures,
+    (bool) preg_match('/function \(\) \{\s*OC_Auth::requireLogin\(\);/', $source),
+    "api route's pre-render auth check is live PHP code, not literal output"
+);
 
 if ($failures) {
     fwrite(STDERR, "\n" . count($failures) . " check(s) failed.\n");
