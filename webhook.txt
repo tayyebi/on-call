@@ -1,0 +1,7 @@
+the rest api here
+
+send sms (number, text, devices)
+
+push notification (text, devices)
+
+ring (devices)
