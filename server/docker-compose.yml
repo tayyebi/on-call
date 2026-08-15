@@ -6,5 +6,6 @@ services:
     env_file:
       - .env
     volumes:
+      - .:/var/www/html
       - ./data:/var/www/html/data
     restart: unless-stopped
