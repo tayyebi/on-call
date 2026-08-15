@@ -7,6 +7,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   server-build:
     name: Merge server into one PHP file
@@ -22,12 +25,11 @@ jobs:
       - name: Test merged build
         working-directory: server
         run: php tests/build_test.php
-      - name: Upload merged artifact
+      - name: Attach app.php to the release
         if: github.event_name == 'release'
-        uses: actions/upload-artifact@v4
-        with:
-          name: on-call-server
-          path: server/dist/app.php
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.event.release.tag_name }}" server/dist/app.php --clobber
 
   mobile-build:
     name: Build Android APK
@@ -45,8 +47,7 @@ jobs:
       - name: Build release APK
         working-directory: mobile
         run: ./build.sh
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: on-call-mobile
-          path: mobile/build/outputs/apk/release/*.apk
+      - name: Attach APK to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.event.release.tag_name }}" mobile/build/outputs/apk/release/*.apk --clobber
