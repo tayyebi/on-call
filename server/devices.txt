@@ -1,5 +1,0 @@
-list connected devices
-
-button: on-board a new device
-table (current devices):
-  ip, model, last seen, command center

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:paddingBottom="16dp" />
+
+    <!-- Shown when disconnected, or connected-but-unreachable (form stays
+         editable in both cases so the user can change server/code). -->
+    <LinearLayout
+        android:id="@+id/connectForm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <EditText
+            android:id="@+id/serverIpInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Server address (e.g. 192.168.1.10:8080)"
+            android:inputType="textUri" />
+
+        <EditText
+            android:id="@+id/pairCodeInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="6-digit pair code"
+            android:inputType="number"
+            android:maxLength="6" />
+
+        <Button
+            android:id="@+id/connectButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Connect" />
+
+        <Button
+            android:id="@+id/retryButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Retry"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Shown when connected and healthy. -->
+    <LinearLayout
+        android:id="@+id/connectedPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/connectedSinceButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/disconnectButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Disconnect" />
+    </LinearLayout>
+
+</LinearLayout>

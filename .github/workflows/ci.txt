@@ -1,7 +1,0 @@
-for server
-merge all scripts in one php file
-upload the artifact on relase
-
-for mobile
-upload the android apk (not bundled - no tar.gz) to artifacts
-build apk only on release

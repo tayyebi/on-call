@@ -1,1 +1,0 @@
-a single file autoloader, customized, with respect to the github workflow, to be able to merge the files later all into one as well.

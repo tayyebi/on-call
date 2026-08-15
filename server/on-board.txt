@@ -1,2 +1,0 @@
-show a random 6 digit numeric code, valid for 5 minutes,
-which device can pair with, show timeout or success.

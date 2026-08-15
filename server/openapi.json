@@ -1,1 +1,92 @@
-write based on the api
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "on-call webhook API",
+    "version": "1.0.0",
+    "description": "REST API for dispatching commands to paired devices. Bearer-token authenticated with API_TOKEN from .env."
+  },
+  "servers": [
+    { "url": "http://localhost:8080" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Devices": {
+        "description": "Device ids to target, or the string \"all\" for every paired device.",
+        "oneOf": [
+          { "type": "array", "items": { "type": "integer" } },
+          { "type": "string", "enum": ["all"] }
+        ]
+      },
+      "CallCreated": {
+        "type": "object",
+        "properties": {
+          "call_id": { "type": "integer" }
+        },
+        "required": ["call_id"]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    }
+  },
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/webhook.php": {
+      "post": {
+        "summary": "Dispatch a command to devices",
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["sms", "notification", "ring"] }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "number": { "type": "string", "description": "sms only" },
+                  "text": { "type": "string", "description": "sms and notification" },
+                  "devices": { "$ref": "#/components/schemas/Devices" }
+                },
+                "required": ["devices"]
+              },
+              "examples": {
+                "sms": { "value": { "number": "+15551234567", "text": "hello", "devices": [1, 2] } },
+                "notification": { "value": { "text": "hello", "devices": "all" } },
+                "ring": { "value": { "devices": [1] } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Command queued",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CallCreated" } } }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "422": {
+            "description": "Missing required fields",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    }
+  }
+}

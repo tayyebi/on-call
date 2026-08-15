@@ -1,7 +1,0 @@
-send commands to the connected device, such as:
-
-send sms to number <input> with text <input>
-
-dispatch a notification with text <input>
-
-play ring sound

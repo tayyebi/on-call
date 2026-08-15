@@ -1,5 +1,0 @@
-show last calls, and their status
-
-sample table row:
-
-datetime, ip, request <click to see verbose in a dedicated page>, target device id(s) [all, or some, or one] <click to see the results in a dedicated page>, retry failed devices button

@@ -1,2 +1,0 @@
-show a list of devices which were responsible for that call
-and show what happened to them
