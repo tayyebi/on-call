@@ -60,8 +60,11 @@ echo "linking resources..."
 echo "compiling java..."
 JAVA_SOURCES="$OUT/sources.txt"
 find "$SRC/java" "$GEN" -name '*.java' > "$JAVA_SOURCES"
-javac -encoding UTF-8 -source 11 -target 11 -nowarn \
-    --system none -bootclasspath "$PLATFORM" \
+# -bootclasspath is only accepted by javac with target <= 8 (9+ requires
+# --release / the module system instead); the sources use nothing newer
+# than Java 8 syntax, so target 8 is both correct and sufficient here.
+javac -encoding UTF-8 -source 8 -target 8 -nowarn \
+    -bootclasspath "$PLATFORM" \
     -d "$CLASSES" \
     @"$JAVA_SOURCES"
 
